@@ -1,0 +1,27 @@
+[package]
+name = "insan"
+version = "0.1.0"
+edition = "2021"
+description = "A (nightly-only until RPITIT is stable, or beta 1.75) microservice/actor/whatever framework."
+
+[workspace]
+members = [".", "http"]
+resolver = "2"
+
+[dependencies]
+insan-http = { optional = true, path = "http" }
+
+[features]
+beta = []
+http = ["dep:insan-http"]
+nightly = []
+default = ["nightly"]
+
+[[example]]
+name = "hello"
+required-features = ["http"]
+
+[dev-dependencies]
+async-std = { version = "1.12", features = [ "attributes" ] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
