@@ -6,14 +6,14 @@ use insan::{
     http::{http_types, *},
     *,
 };
-use insan_http::types::{Mime, StatusCode};
+use insan_http::types::{Method, Mime, StatusCode};
 use tracing::*;
 
 struct HelloService;
 
 impl Service for HelloService {
     type Error = http_types::Error;
-    type Context = HttpContext;
+    type Context = HttpContext<Self>;
 
     fn started(
         &mut self,
@@ -39,13 +39,34 @@ impl Service for HelloService {
 impl Handler<Request, Response> for HelloService {
     fn call(
         &mut self,
-        _req: Request,
+        mut req: Request,
         _cx: &mut Self::Context,
     ) -> impl Future<Output = Result<Response, Self::Error>> {
         async move {
             let mut resp = Response::new(StatusCode::Ok);
-            resp.set_content_type(Mime::from_str("text/html").unwrap());
-            resp.set_body("<!doctype html><html><head><title>THIS FUCKING WORKS YEEEAHH</title></head><body><h1>GG</h1><h2>THIS FUCKING WORKS YEEEEEE</h2></body></html>");
+            debug!("Serving request {req:?}");
+            match (req.method(), req.url().path()) {
+                (Method::Get, "/") => {
+                    resp.set_content_type(Mime::from_str("text/html").unwrap());
+                    resp.set_body("<!doctype html><html><head><title>THIS FUCKING WORKS YEEEAHH</title></head><body><h1>GG</h1><h2>THIS FUCKING WORKS YEEEEEE</h2></body></html>");
+                }
+                (Method::Post, "/say_hello") => {
+                    resp.set_content_type(Mime::from_str("text/html").unwrap());
+                    resp.set_body(format!("<!doctype html><html><head><title>You said something</title></head><body><h1>You said:</h1><h2>{}</h2></body></html>", req.body_string().await?));
+                }
+                (method, path @ ("/" | "/say_hello")) => {
+                    return Err(http_types::Error::from_str(
+                        StatusCode::MethodNotAllowed,
+                        format!("Invalid method {method} on route {path}"),
+                    ))
+                }
+                (_, path) => {
+                    return Err(http_types::Error::from_str(
+                        StatusCode::NotFound,
+                        format!("Invalid route {path}"),
+                    ))
+                }
+            }
 
             Ok(resp)
         }

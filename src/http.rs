@@ -1,59 +1,23 @@
 use insan_http::{
     server::{ConnectionStatus, Server as HttpServer},
-    Read, Write,
+    Read, Write, types::StatusCode,
 };
 pub use insan_http::{types as http_types, types::{Request, Response}};
 
 use crate::{Handler, Service};
 
-pub struct Route<S> {
-    route: String,
-    service: S,
-}
-
-#[derive(Debug)]
-pub enum RouteError<E> {
-    Service(E),
-    DidNotMatch(String),
-}
-
-impl<E> From<E> for RouteError<E> {
-    fn from(value: E) -> Self {
-        Self::Service(value)
+pub trait ResponseError: std::fmt::Display {
+    fn status_code(&self) -> StatusCode;
+    fn to_response(&self) -> Response {
+        let mut response = Response::new(self.status_code());
+        response.set_body(self.to_string());
+        response
     }
 }
 
-impl<S: Service<Context = HttpContext>> Service for Route<S> {
-    type Error = RouteError<S::Error>;
-    type Context = HttpContext;
-
-    fn started(
-        &mut self,
-        cx: &mut Self::Context,
-    ) -> impl std::future::Future<Output = Result<(), Self::Error>> {
-        async move { Ok(self.service.started(cx).await?) }
-    }
-    fn stopping(
-        &mut self,
-        cx: &mut Self::Context,
-    ) -> impl std::future::Future<Output = Result<(), Self::Error>> {
-        async move { Ok(self.service.stopping(cx).await?) }
-    }
-}
-
-impl<S: Handler<Request, Response, Context = HttpContext>> Handler<Request, Response> for Route<S> {
-    fn call(
-        &mut self,
-        request: Request,
-        cx: &mut Self::Context,
-    ) -> impl std::future::Future<Output = Result<Response, Self::Error>> {
-        async move {
-            if request.url().path() == self.route {
-                Ok(self.service.call(request, cx).await?)
-            } else {
-                Err(RouteError::DidNotMatch(request.url().path().to_owned()))
-            }
-        }
+impl ResponseError for http_types::Error {
+    fn status_code(&self) -> StatusCode {
+        self.status()
     }
 }
 
@@ -62,17 +26,23 @@ pub struct Server<H, RW> {
     server: HttpServer<RW>,
 }
 
-pub struct HttpContext {}
-impl HttpContext {
+pub struct HttpContext<S: Service<Context = Self>> {
+    stop_reason: Option<S::Error>
+}
+impl<S: Service<Context = Self>> HttpContext<S> {
     fn make() -> Self {
-        Self {}
+        Self { stop_reason: None }
+    }
+
+    pub fn fatal(&mut self, error: S::Error) {
+        self.stop_reason = Some(error);
     }
 }
 
-impl<H: Service<Context = HttpContext> + Handler<Request, Response>, RW> Server<H, RW>
+impl<H: Service<Context = HttpContext<H>> + Handler<Request, Response>, RW> Server<H, RW>
 where
     RW: Read + Write + Clone + Send + Sync + Unpin + 'static,
-    H::Error: From<std::io::Error> + From<insan_http::types::Error>,
+    H::Error: From<std::io::Error> + From<insan_http::types::Error> + ResponseError,
 {
     pub fn new(root: H, io: RW) -> Self {
         Self {
@@ -88,9 +58,16 @@ where
 
         while let ConnectionStatus::KeepAlive = self
             .server
-            .accept_one(|req| self.root.call(req, &mut cx))
+            .accept_one(|req| async { Ok::<_, http_types::Error>(match self.root.call(req, &mut cx).await {
+                Ok(ok) => ok,
+                Err(e) => e.to_response()
+            }) })
             .await?
-        {}
+        {
+            if let Some(reason) = cx.stop_reason.take() {
+                return Err(reason);
+            }
+        }
 
         self.root.stopping(&mut cx).await?;
 
