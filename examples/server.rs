@@ -36,8 +36,10 @@ impl Handler<Request, Response> for HelloService {
                 resp.set_body("<!doctype html><html><head><title>THIS FUCKING WORKS YEEEAHH</title></head><body><h1>GG</h1><h2>THIS FUCKING WORKS YEEEEEE</h2></body></html>");
             }
             (Method::Post, "/say_hello") => {
+                let said = req.body_string().await?;
+                info!("POST /say_hello with {said}");
                 resp.set_content_type(Mime::from_str("text/html").unwrap());
-                resp.set_body(format!("<!doctype html><html><head><title>You said something</title></head><body><h1>You said:</h1><h2>{}</h2></body></html>", req.body_string().await?));
+                resp.set_body(format!("<!doctype html><html><head><title>You said something</title></head><body><h1>You said:</h1><h2>{said}</h2></body></html>"));
             }
             (method, path @ ("/" | "/say_hello")) => {
                 return Err(http_types::Error::from_str(

@@ -2,8 +2,8 @@ use proc_macro::TokenStream as TS;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
 use syn::{
-    parenthesized, parse2, spanned::Spanned, token, Data, DeriveInput, Expr, Fields, Meta,
-    MetaList, Result, Token, Type,
+    parenthesized, parse2, spanned::Spanned, token, Data, DeriveInput, Expr, Fields, Item, Meta,
+    MetaList, MetaNameValue, Result, Token, Type,
 };
 
 #[proc_macro]
@@ -263,5 +263,27 @@ fn _endpoint(item: TokenStream) -> Result<TokenStream> {
                 Ok(#desetup)
             }
         }
+    })
+}
+
+#[proc_macro_attribute]
+pub fn with_builder(args: TS, item: TS) -> TS {
+    _with_builder(args.into(), item.into())
+        .unwrap_or_else(|e| e.to_compile_error())
+        .into()
+}
+
+fn _with_builder(_args: TokenStream, item: TokenStream) -> Result<TokenStream> {
+    let item = parse2::<Item>(item)?;
+    let (ident, client) = match &item {
+        Item::Struct(s) => (s.ident.clone(), s.attrs.iter().find(|x| matches!(&x.meta, Meta::NameValue(MetaNameValue { path, .. }) if path.is_ident("")))),
+        _ => unreachable!()
+    };
+    let bld = Ident::new(&format!("{ident}Builder"), ident.span());
+
+    Ok(quote::quote! {
+        #item
+
+        pub struct #bld<'a>(&'a #client, )
     })
 }

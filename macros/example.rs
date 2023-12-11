@@ -1,5 +1,6 @@
-#![endpoint_error = "http_types::Error"]
+endpoint_error!(http_types::Error);
 
+#[with_builder]
 #[derive(ClientEndpoint)]
 #[endpoint(Get "/" in TradingClient -> Account)]
 pub struct GetAccount;
@@ -22,6 +23,10 @@ impl ClientEndpoint for GetAccount {
 
         // unit struct - no request init logic
 
-        Ok(cx.run_request(request).await?.body_json::<Self::Output>().await?)
+        Ok(cx
+            .run_request(request)
+            .await?
+            .body_json::<Self::Output>()
+            .await?)
     }
 }

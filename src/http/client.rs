@@ -97,6 +97,7 @@ impl<M: Middleware> HttpClientContext for HttpClient<M> {
             },
         )
     }
+
     async fn run_request(&self, request: Request) -> Result<Response, http_types::Error> {
         self.execute(request).await
     }
