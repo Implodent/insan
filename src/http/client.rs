@@ -1,4 +1,6 @@
 use super::*;
+use acril_http::types::Url;
+pub use acril_macros::ClientEndpoint;
 
 pub struct NoMiddleware;
 
@@ -13,7 +15,7 @@ pub trait Middleware: Service<Context = (), Error = http_types::Error> {
 
 impl Middleware for NoMiddleware {
     async fn call(&self, request: Request) -> Result<Response, Self::Error> {
-        insan_http::client::connect(
+        acril_http::client::connect(
             TcpStream::connect(format!(
                 "{}:{}",
                 request.url().host_str().ok_or_else(|| {
@@ -39,11 +41,19 @@ impl Middleware for NoMiddleware {
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct HttpClient<M = NoMiddleware> {
     middleware: M,
+    base_url: Option<Url>,
 }
 
 impl<M: Middleware> HttpClient<M> {
     pub fn new_with(middleware: M) -> Self {
-        Self { middleware }
+        Self {
+            middleware,
+            base_url: None,
+        }
+    }
+    pub fn with_base_url(mut self, base_url: Url) -> Self {
+        self.base_url = Some(base_url);
+        self
     }
 
     pub async fn call<E: Service<Context = Self> + ClientEndpoint>(
@@ -62,19 +72,30 @@ impl HttpClient<NoMiddleware> {
     pub fn new() -> Self {
         Self {
             middleware: NoMiddleware,
+            base_url: None,
         }
     }
 }
 
 pub trait HttpClientContext {
-    fn new_request(&self, method: Method, url: http_types::Url) -> Request;
+    fn new_request(&self, method: Method, url: &str) -> Request;
 
     async fn run_request(&self, request: Request) -> Result<Response, http_types::Error>;
 }
 
 impl<M: Middleware> HttpClientContext for HttpClient<M> {
-    fn new_request(&self, method: Method, url: http_types::Url) -> Request {
-        Request::new(method, url)
+    fn new_request(&self, method: Method, url: &str) -> Request {
+        Request::new(
+            method,
+            if let Some(base) = self.base_url.as_ref() {
+                Url::options()
+                    .base_url(Some(base))
+                    .parse(url)
+                    .expect("errors reparsing a perfectly good url")
+            } else {
+                Url::parse(url).unwrap()
+            },
+        )
     }
     async fn run_request(&self, request: Request) -> Result<Response, http_types::Error> {
         self.execute(request).await

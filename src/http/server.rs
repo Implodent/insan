@@ -21,7 +21,7 @@ impl<S: Service<Context = Self>> HttpContext<S> {
 impl<H: Service<Context = HttpContext<H>> + Handler<Request, Response>, RW> Server<H, RW>
 where
     RW: Read + Write + Clone + Send + Sync + Unpin + 'static,
-    H::Error: From<std::io::Error> + From<insan_http::types::Error> + ResponseError,
+    H::Error: From<std::io::Error> + From<acril_http::types::Error> + ResponseError,
 {
     pub fn new(root: H, io: RW) -> Self {
         Self {

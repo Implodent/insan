@@ -1,22 +1,25 @@
 [package]
-name = "insan"
+name = "acril"
 version = "0.1.0"
 edition = "2021"
-description = "A (nightly-only until RPITIT is stable, or beta 1.75) microservice/actor/whatever framework."
+description = "A microservice/actor/whatever framework."
 
 [workspace]
-members = [".", "http"]
+members = [".", "http", "macros"]
 resolver = "2"
 
 [dependencies]
 async-std = "1.12"
-insan-http = { optional = true, path = "http" }
+acril-http = { optional = true, path = "http" }
+acril-macros = { path = "./macros", optional = true }
+serde_urlencoded = "0.7.1"
 
 [features]
 beta = []
-http = ["dep:insan-http"]
+http = ["dep:acril-http"]
 nightly = []
-default = ["nightly"]
+macros = ["dep:acril-macros"]
+default = ["macros", "nightly"]
 
 [[example]]
 name = "server"
