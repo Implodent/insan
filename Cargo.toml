@@ -9,6 +9,7 @@ members = [".", "http"]
 resolver = "2"
 
 [dependencies]
+async-std = "1.12"
 insan-http = { optional = true, path = "http" }
 
 [features]
@@ -18,7 +19,11 @@ nightly = []
 default = ["nightly"]
 
 [[example]]
-name = "hello"
+name = "server"
+required-features = ["http"]
+
+[[example]]
+name = "client"
 required-features = ["http"]
 
 [dev-dependencies]
