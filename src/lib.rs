@@ -36,6 +36,6 @@ pub mod prelude {
     #[cfg(feature = "http")]
     pub mod http {
         pub use super::*;
-        pub use crate::http::{*, client::*, server::*, http_types::{self, Response, Request, Method, Url, StatusCode}};
+        pub use crate::http::{*, client::*, server::*, http_types::{self, Mime, Response, Request, Method, Url, StatusCode}};
     }
 }

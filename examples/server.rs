@@ -2,11 +2,7 @@
 use std::{error::Error, str::FromStr};
 
 use async_std::net::TcpListener;
-use acril::{
-    http::{http_types, server::*, *},
-    *,
-};
-use acril_http::types::{Method, Mime, StatusCode};
+use acril::prelude::http::*;
 use tracing::*;
 
 struct HelloService;
