@@ -9,8 +9,8 @@ impl Service for NoMiddleware {
     type Error = http_types::Error;
 }
 
-pub trait Middleware: Service<Context = (), Error = http_types::Error> {
-    async fn call(&self, request: Request) -> Result<Response, Self::Error>;
+pub trait Middleware: Service<Context = ()> {
+    async fn call(&self, request: Request) -> Result<Response, <Self as Service>::Error>;
 }
 
 impl Middleware for NoMiddleware {
@@ -83,12 +83,16 @@ impl HttpClient<NoMiddleware> {
 }
 
 pub trait HttpClientContext {
+    type Error;
+
     fn new_request(&self, method: Method, url: &str) -> Request;
 
-    async fn run_request(&self, request: Request) -> Result<Response, http_types::Error>;
+    async fn run_request(&self, request: Request) -> Result<Response, Self::Error>;
 }
 
 impl<M: Middleware> HttpClientContext for HttpClient<M> {
+    type Error = <M as Service>::Error;
+
     fn new_request(&self, method: Method, url: &str) -> Request {
         Request::new(
             method,
@@ -103,7 +107,7 @@ impl<M: Middleware> HttpClientContext for HttpClient<M> {
         )
     }
 
-    async fn run_request(&self, request: Request) -> Result<Response, http_types::Error> {
+    async fn run_request(&self, request: Request) -> Result<Response, M::Error> {
         self.execute(request).await
     }
 }
