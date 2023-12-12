@@ -148,7 +148,15 @@ fn _endpoint(item: TokenStream) -> Result<TokenStream> {
         }
         Data::Struct(s) => match s.fields {
             Fields::Unit => (
-                (quote::quote!(), quote::quote!()),
+                (
+                    quote::quote!(), 
+                    match meta.mode.1 {
+                        MetaMode::Json => quote::quote!(response.body_json().await?),
+                        MetaMode::Display => quote::quote!(response.body_string().await?),
+                        MetaMode::Query => todo!(),
+                        MetaMode::Empty => quote::quote!(()),
+                    },
+                ),
                 meta.path.to_token_stream(),
             ),
             Fields::Named(named) => (
