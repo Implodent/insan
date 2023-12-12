@@ -29,6 +29,10 @@ required-features = ["http"]
 name = "client"
 required-features = ["http"]
 
+[[example]]
+name = "builder"
+required-features = ["macros"]
+
 [dev-dependencies]
 async-std = { version = "1.12", features = [ "attributes" ] }
 tracing = "0.1.40"

@@ -1,6 +1,6 @@
 use super::*;
 use acril_http::types::Url;
-pub use acril_macros::ClientEndpoint;
+pub use acril_macros::{with_builder, ClientEndpoint};
 
 pub struct NoMiddleware;
 

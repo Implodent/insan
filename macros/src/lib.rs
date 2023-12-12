@@ -2,8 +2,8 @@ use proc_macro::TokenStream as TS;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
 use syn::{
-    parenthesized, parse2, spanned::Spanned, token, Data, DeriveInput, Expr, Fields, Item, Meta,
-    MetaList, MetaNameValue, Result, Token, Type, parse_quote,
+    parenthesized, parse2, parse_quote, spanned::Spanned, token, Data, DeriveInput, Expr, Field,
+    Fields, Item, ItemStruct, Meta, MetaList, MetaNameValue, Result, Token, Type,
 };
 
 #[proc_macro]
@@ -23,7 +23,7 @@ fn _endpoint_error(args: TokenStream) -> Result<TokenStream> {
     })
 }
 
-#[proc_macro_derive(ClientEndpoint, attributes(endpoint))]
+#[proc_macro_derive(ClientEndpoint, attributes(endpoint, required))]
 pub fn endpoint(item: TS) -> TS {
     _endpoint(item.into())
         .unwrap_or_else(|e| e.to_compile_error())
@@ -110,7 +110,9 @@ impl syn::parse::Parse for EndpointMeta {
             output: if input.peek(Token![->]) {
                 input.parse::<Token![->]>()?;
                 input.parse()?
-            } else { parse_quote!(()) },
+            } else {
+                parse_quote!(())
+            },
         })
     }
 }
@@ -149,7 +151,7 @@ fn _endpoint(item: TokenStream) -> Result<TokenStream> {
         Data::Struct(s) => match s.fields {
             Fields::Unit => (
                 (
-                    quote::quote!(), 
+                    quote::quote!(),
                     match meta.mode.1 {
                         MetaMode::Json => quote::quote!(response.body_json().await?),
                         MetaMode::Display => quote::quote!(response.body_string().await?),
@@ -282,17 +284,149 @@ pub fn with_builder(args: TS, item: TS) -> TS {
         .into()
 }
 
-fn _with_builder(_args: TokenStream, item: TokenStream) -> Result<TokenStream> {
-    let item = parse2::<Item>(item)?;
-    let (ident, client) = match &item {
-        Item::Struct(s) => (s.ident.clone(), s.attrs.iter().find(|x| matches!(&x.meta, Meta::NameValue(MetaNameValue { path, .. }) if path.is_ident("endpoint")))),
-        _ => unreachable!()
+fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
+    let mut item = parse2::<Item>(item)?;
+    let value = {
+        let (ident, struct_fields, meta) = match &item {
+            Item::Struct(s) => (
+                s.ident.clone(),
+                &s.fields,
+                parse2::<EndpointMeta>(
+                    s.attrs
+                        .iter()
+                        .find_map(|x| {
+                            if x.path().is_ident("endpoint") {
+                                Some(x.meta.require_list().ok()?.tokens.clone())
+                            } else {
+                                None
+                            }
+                        })
+                        .expect("no endpoint attribute"),
+                )?,
+            ),
+            _ => unreachable!(),
+        };
+        let client = meta.client;
+        let output = meta.output;
+        let bld = Ident::new(&format!("{ident}Builder"), ident.span());
+        let fields = match struct_fields {
+            Fields::Unit => return Ok(TokenStream::new()),
+            Fields::Named(named) => &named.named,
+            Fields::Unnamed(unnamed) => {
+                return Err(syn::Error::new_spanned(
+                    unnamed,
+                    "#[with_builder] does not support tuple structs",
+                ))
+            }
+        };
+
+        let field_methods = fields.iter().map(
+            |Field {
+                 ident, ty, attrs, ..
+             }| {
+                let doc = attrs.iter().find_map(|x| {
+                    if x.path().is_ident("doc") {
+                        if let Meta::NameValue(MetaNameValue { value, .. }) = &x.meta {
+                            Some(quote::quote!(#[doc = #value]))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                });
+
+                quote::quote! {
+                #doc
+                                pub fn #ident(mut self, #ident: #ty) -> Self {
+                        self.1.#ident = #ident;
+                        self
+                                }
+                            }
+            },
+        );
+
+        let client_impl = if let Ok(method) = parse2::<Ident>(args) {
+            if fields
+                .iter()
+                .all(|x| x.attrs.iter().any(|a| a.path().is_ident("required")))
+            {
+                let args = fields
+                    .iter()
+                    .map(|Field { ident, ty, .. }| quote::quote!(#ident: #ty));
+                let self_init_fields = fields
+                    .iter()
+                    .map(|Field { ident, .. }| quote::quote!(#ident));
+
+                Some(quote::quote! {
+                impl #client {
+                pub async fn #method(&self, #(#args,)*) -> Result<#output, __Endpoint_Error> {
+                    #ident {#(#self_init_fields,)*}.run(self).await
+                }
+                }
+                            })
+            } else {
+                let args = fields.iter().filter_map(
+                    |Field {
+                         attrs, ident, ty, ..
+                     }| {
+                        if attrs.iter().any(|a| a.path().is_ident("required")) {
+                            Some(quote::quote!(#ident: #ty))
+                        } else {
+                            None
+                        }
+                    },
+                );
+                let self_init_fields = fields.iter().map(
+                    |Field {
+                         attrs, ident, ty, ..
+                     }| {
+                        if attrs.iter().any(|a| a.path().is_ident("required")) {
+                            quote::quote!(#ident)
+                        } else {
+                            quote::quote!(#ident: <#ty as Default>::default())
+                        }
+                    },
+                );
+
+                Some(quote::quote! {
+                        impl #client {
+                pub fn #method(&self, #(#args,)*) -> #bld<'_> {
+                    #bld(self, #ident { #(#self_init_fields,)* })
+                }
+                        }
+                                })
+            }
+        } else {
+            None
+        };
+
+        quote::quote! {
+            #item
+
+            pub struct #bld<'a>(&'a #client, #ident);
+            impl<'a> #bld<'a> {
+                pub async fn execute(self) -> Result<#output, __Endpoint_Error> {
+                    self.1.run(self.0).await
+                }
+
+                #(#field_methods)*
+            }
+
+            #client_impl
+        }
     };
-    let bld = Ident::new(&format!("{ident}Builder"), ident.span());
 
-    Ok(quote::quote! {
-        #item
+    if let Item::Struct(ItemStruct {
+        fields: Fields::Named(ref mut named),
+        ..
+    }) = item
+    {
+        named
+            .named
+            .iter_mut()
+            .for_each(|x| x.attrs.retain_mut(|x| !x.path().is_ident("with_builder")));
+    }
 
-        pub struct #bld<'a>(&'a #client, )
-    })
+    Ok(value)
 }
