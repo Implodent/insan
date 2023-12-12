@@ -163,7 +163,7 @@ fn _endpoint(item: TokenStream) -> Result<TokenStream> {
                 (
                     match meta.mode.0 {
                         MetaMode::Json => {
-                            quote::quote! { request.set_body(http_types::Body::from_json(self)) }
+                            quote::quote! { request.set_body(http_types::Body::from_json(self)); }
                         }
                         MetaMode::Query => quote::quote! {
                             self.serialize(acril::serde_urlencoded::Serializer::new(&mut request.url_mut().query_pairs_mut()))?;
