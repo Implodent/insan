@@ -86,7 +86,6 @@ pub trait HttpClientContext {
     type Error;
 
     fn new_request(&self, method: Method, url: &str) -> Request;
-
     async fn run_request(&self, request: Request) -> Result<Response, Self::Error>;
 }
 

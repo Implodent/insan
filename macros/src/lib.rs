@@ -263,6 +263,7 @@ fn _endpoint(item: TokenStream) -> Result<TokenStream> {
         impl ClientEndpoint for #ident {
             type Output = #output;
 
+            #[allow(unused)]
             async fn run(&self, client: &Self::Context) -> Result<Self::Output, Self::Error> {
                 let mut request = client.new_request(Method::#method, &{#url});
                 #setup
