@@ -60,6 +60,9 @@ impl<M: Middleware> HttpClient<M> {
     pub fn get_middleware(&self) -> &M {
         &self.middleware
     }
+    pub fn base_url(&self) -> Option<&Url> {
+        self.base_url.as_ref()
+    }
 
     pub async fn call<E: Service<Context = Self> + ClientEndpoint>(
         &self,
