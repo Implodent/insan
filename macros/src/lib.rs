@@ -276,7 +276,7 @@ pub fn with_builder(args: TS, item: TS) -> TS {
 fn _with_builder(_args: TokenStream, item: TokenStream) -> Result<TokenStream> {
     let item = parse2::<Item>(item)?;
     let (ident, client) = match &item {
-        Item::Struct(s) => (s.ident.clone(), s.attrs.iter().find(|x| matches!(&x.meta, Meta::NameValue(MetaNameValue { path, .. }) if path.is_ident("")))),
+        Item::Struct(s) => (s.ident.clone(), s.attrs.iter().find(|x| matches!(&x.meta, Meta::NameValue(MetaNameValue { path, .. }) if path.is_ident("endpoint")))),
         _ => unreachable!()
     };
     let bld = Ident::new(&format!("{ident}Builder"), ident.span());
