@@ -51,9 +51,14 @@ impl<M: Middleware> HttpClient<M> {
             base_url: None,
         }
     }
+
     pub fn with_base_url(mut self, base_url: Url) -> Self {
         self.base_url = Some(base_url);
         self
+    }
+
+    pub fn get_middleware(&self) -> &M {
+        &self.middleware
     }
 
     pub async fn call<E: Service<Context = Self> + ClientEndpoint>(
