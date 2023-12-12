@@ -3,7 +3,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
 use syn::{
     parenthesized, parse2, spanned::Spanned, token, Data, DeriveInput, Expr, Fields, Item, Meta,
-    MetaList, MetaNameValue, Result, Token, Type,
+    MetaList, MetaNameValue, Result, Token, Type, parse_quote,
 };
 
 #[proc_macro]
@@ -107,10 +107,10 @@ impl syn::parse::Parse for EndpointMeta {
                 input.parse::<Token![in]>()?;
                 input.parse()?
             },
-            output: {
+            output: if input.peek(Token![->]) {
                 input.parse::<Token![->]>()?;
                 input.parse()?
-            },
+            } else { parse_quote!(()) },
         })
     }
 }
