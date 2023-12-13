@@ -339,7 +339,9 @@ fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
                     quote::quote! {
                         impl #client {
                             #doc_unit
-                            pub async fn #method()
+                            pub async fn #method(&self) -> Result<#output, __Endpoint_Error> {
+                                #ident.run(self).await
+                            }
                         }
                     }
                 } else {
