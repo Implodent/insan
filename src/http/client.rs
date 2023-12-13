@@ -1,6 +1,6 @@
 use super::*;
-use acril_http::types::Url;
 pub use acril_macros::{with_builder, ClientEndpoint};
+use http_types::Url;
 
 pub struct NoMiddleware;
 
@@ -15,26 +15,7 @@ pub trait Middleware: Service<Context = ()> {
 
 impl Middleware for NoMiddleware {
     async fn call(&self, request: Request) -> Result<Response, Self::Error> {
-        acril_http::client::connect(
-            TcpStream::connect(format!(
-                "{}:{}",
-                request.url().host_str().ok_or_else(|| {
-                    http_types::Error::from_str(
-                        StatusCode::UnprocessableEntity,
-                        "No host in request URL",
-                    )
-                })?,
-                request.url().port_or_known_default().ok_or_else(|| {
-                    http_types::Error::from_str(
-                        StatusCode::UnprocessableEntity,
-                        "No port in request URL",
-                    )
-                })?
-            ))
-            .await?,
-            request,
-        )
-        .await
+        acril_http::client::connect(request).await
     }
 }
 

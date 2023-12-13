@@ -1,6 +1,6 @@
 use crate::chunked::ChunkedDecoder;
 use async_dup::{Arc, Mutex};
-use futures_lite::io::{AsyncRead as Read, BufReader, Take};
+use futures::io::{AsyncRead as Read, BufReader, Take};
 use std::{
     fmt::Debug,
     io,

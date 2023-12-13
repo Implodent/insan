@@ -22,11 +22,13 @@ impl HttpClientContext for MyClient {
 pub struct MyCoolEndpoint {
     #[required]
     pub required: String,
-    pub not_required: Vec<String>
+    pub not_required: Vec<String>,
 }
 
 fn main() {
-    let builder = MyClient.coolness(String::from("YEAH IM COOL ;)")).not_required(vec![String::from("absolutely"), String::from("insanely")]);
+    let builder = MyClient
+        .coolness(String::from("YEAH IM COOL ;)"))
+        .not_required(vec![String::from("absolutely"), String::from("insanely")]);
 
     println!("{:#?}", builder.1);
 }

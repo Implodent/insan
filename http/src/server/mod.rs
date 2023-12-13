@@ -1,8 +1,8 @@
 //! Process HTTP connections on the server.
 
 use async_io::Timer;
-use futures_lite::io::{self, AsyncRead as Read, AsyncWrite as Write};
-use futures_lite::prelude::*;
+use futures::io::{self, AsyncRead as Read, AsyncWrite as Write};
+use futures::prelude::*;
 use http_types::headers::{CONNECTION, UPGRADE};
 use http_types::upgrade::Connection;
 use http_types::{Request, Response, StatusCode};

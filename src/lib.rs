@@ -2,8 +2,8 @@
     any(not(feature = "beta"), feature = "nightly"),
     feature(async_fn_in_trait)
 )]
-pub use std::future::Future;
 pub use serde_urlencoded;
+pub use std::future::Future;
 
 pub trait Handler<Request, Response>: Service {
     async fn call(
@@ -20,10 +20,7 @@ pub trait Service {
     async fn started(&mut self, _cx: &Self::Context) -> Result<(), Self::Error> {
         Ok(())
     }
-    async fn stopping(
-        &mut self,
-        _cx: &Self::Context,
-    ) -> Result<(), Self::Error> {
+    async fn stopping(&mut self, _cx: &Self::Context) -> Result<(), Self::Error> {
         Ok(())
     }
 }
@@ -32,10 +29,16 @@ pub trait Service {
 pub mod http;
 
 pub mod prelude {
-    pub use crate::{Service, Handler, serde_urlencoded};
+    pub use crate::{serde_urlencoded, Handler, Service};
     #[cfg(feature = "http")]
     pub mod http {
         pub use super::*;
-        pub use crate::http::{*, client::*, server::*, http_types::{self, Mime, Response, Request, Method, Url, StatusCode}};
+        #[cfg(not(target_arch = "wasm32"))]
+        pub use crate::http::server::*;
+        pub use crate::http::{
+            client::*,
+            http_types::{self, Method, Mime, Request, Response, StatusCode, Url},
+            *,
+        };
     }
 }

@@ -2,7 +2,7 @@ use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures_lite::io::AsyncRead as Read;
+use futures::io::AsyncRead as Read;
 use http_types::Body;
 use pin_project::pin_project;
 

@@ -3,8 +3,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures_lite::io::{self, AsyncRead as Read};
-use futures_lite::ready;
+use futures::io::{self, AsyncRead as Read};
+use futures::ready;
 use http_types::trailers::{Sender, Trailers};
 
 /// Decodes a chunked body according to

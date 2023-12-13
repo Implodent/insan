@@ -8,11 +8,16 @@ description = "A microservice/actor/whatever framework."
 members = [".", "http", "macros"]
 resolver = "2"
 
-[dependencies]
+[workspace.dependencies]
+http-types = { version = "2.12.0", default-features = false }
 async-std = "1.12"
-acril-http = { optional = true, path = "http" }
+
+[dependencies]
 acril-macros = { path = "./macros", optional = true }
 serde_urlencoded = "0.7.1"
+async-std.workspace = true
+acril-http = { optional = true, path = "http" }
+http-types.workspace = true
 
 [features]
 beta = []

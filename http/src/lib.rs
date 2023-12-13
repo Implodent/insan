@@ -88,7 +88,6 @@
 //! }
 //! ```
 
-#![forbid(unsafe_code)]
 #![deny(missing_debug_implementations, nonstandard_style, rust_2018_idioms)]
 #![warn(missing_docs, missing_doc_code_examples, unreachable_pub)]
 #![cfg_attr(test, deny(warnings))]
@@ -104,22 +103,28 @@ const MAX_HEADERS: usize = 128;
 /// See: https://nodejs.org/en/blog/vulnerability/november-2018-security-releases/#denial-of-service-with-large-http-headers-cve-2018-12121
 const MAX_HEAD_LENGTH: usize = 8 * 1024;
 
+#[cfg(not(target_arch = "wasm32"))]
 mod body_encoder;
+#[cfg(not(target_arch = "wasm32"))]
 mod chunked;
 mod date;
+#[cfg(not(target_arch = "wasm32"))]
 mod read_notifier;
 
 pub mod client;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod server;
 
+#[cfg(not(target_arch = "wasm32"))]
 use body_encoder::BodyEncoder;
 pub use client::connect;
-use futures_lite::io::Cursor;
-pub use http_types as types;
+use futures::io::Cursor;
+pub use futures::io::{AsyncRead as Read, AsyncWrite as Write};
+#[cfg(not(target_arch = "wasm32"))]
 pub use server::ServerOptions;
-pub use futures_lite::io::{AsyncRead as Read, AsyncWrite as Write};
 
 #[derive(Debug)]
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) enum EncoderState {
     Start,
     Head(Cursor<Vec<u8>>),

@@ -3,7 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use async_channel::Sender;
-use futures_lite::io::{self, AsyncBufRead as BufRead, AsyncRead as Read};
+use futures::io::{self, AsyncBufRead as BufRead, AsyncRead as Read};
 
 /// ReadNotifier forwards [`async_std::io::Read`] and
 /// [`async_std::io::BufRead`] to an inner reader. When the

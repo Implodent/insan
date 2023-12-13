@@ -2,7 +2,7 @@ use std::io::Write;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures_lite::io::{self, AsyncRead as Read, Cursor};
+use futures::io::{self, AsyncRead as Read, Cursor};
 use http_types::headers::{CONTENT_LENGTH, HOST, TRANSFER_ENCODING};
 use http_types::{Method, Request};
 

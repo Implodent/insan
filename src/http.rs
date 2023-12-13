@@ -1,17 +1,9 @@
-use async_std::net::TcpStream;
-use acril_http::{
-    server::{ConnectionStatus, Server as HttpServer},
-    types::{Method, StatusCode},
-    Read, Write,
-};
-pub use acril_http::{
-    types as http_types,
-    types::{Request, Response},
-};
+pub use http_types::{self, Method, Request, Response, StatusCode};
 
-use crate::{Handler, Service};
+use crate::Service;
 
 pub mod client;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod server;
 
 pub use acril_macros::endpoint_error;

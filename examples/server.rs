@@ -1,8 +1,8 @@
 #![feature(async_fn_in_trait)]
 use std::{error::Error, str::FromStr};
 
-use async_std::net::TcpListener;
 use acril::prelude::http::*;
+use async_std::net::TcpListener;
 use tracing::*;
 
 struct HelloService;
