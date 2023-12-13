@@ -54,8 +54,8 @@ pub async fn connect(req: Request) -> http_types::Result<Response> {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    native_connect(
-        async_std::net::TcpStream::connect(format!(
+    if req.url().scheme() == "https" {
+        let stream = async_std::net::TcpStream::connect(format!(
             "{}:{}",
             req.url().host_str().ok_or_else(|| {
                 http_types::Error::from_str(
@@ -70,10 +70,46 @@ pub async fn connect(req: Request) -> http_types::Result<Response> {
                 )
             })?
         ))
-        .await?,
-        req,
-    )
-    .await
+        .await?;
+        let connector = async_tls::TlsConnector::default();
+
+        native_connect(
+            connector
+                .connect(
+                    req.host().ok_or_else(|| {
+                        http_types::Error::from_str(
+                            StatusCode::UnprocessableEntity,
+                            "No host in request URL",
+                        )
+                    })?,
+                    stream,
+                )
+                .await?,
+            req,
+        )
+        .await
+    } else {
+        native_connect(
+            async_std::net::TcpStream::connect(format!(
+                "{}:{}",
+                req.url().host_str().ok_or_else(|| {
+                    http_types::Error::from_str(
+                        StatusCode::UnprocessableEntity,
+                        "No host in request URL",
+                    )
+                })?,
+                req.url().port_or_known_default().ok_or_else(|| {
+                    http_types::Error::from_str(
+                        StatusCode::UnprocessableEntity,
+                        "No port in request URL",
+                    )
+                })?
+            ))
+            .await?,
+            req,
+        )
+        .await
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
