@@ -1,7 +1,8 @@
+use crate::Handler;
+
 use super::*;
 use acril_http::{
     server::{ConnectionStatus, Server as HttpServer},
-    types::{Method, StatusCode},
     Read, Write,
 };
 
@@ -26,7 +27,7 @@ impl<S: Service<Context = Self>> HttpContext<S> {
 impl<H: Service<Context = HttpContext<H>> + Handler<Request, Response>, RW> Server<H, RW>
 where
     RW: Read + Write + Clone + Send + Sync + Unpin + 'static,
-    H::Error: From<std::io::Error> + From<acril_http::types::Error> + ResponseError,
+    H::Error: From<std::io::Error> + From<http_types::Error> + ResponseError,
 {
     pub fn new(root: H, io: RW) -> Self {
         Self {

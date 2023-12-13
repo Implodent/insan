@@ -1,8 +1,8 @@
 //! Process HTTP connections on the server.
 
 use async_io::Timer;
+use futures::future::FutureExt;
 use futures::io::{self, AsyncRead as Read, AsyncWrite as Write};
-use futures::prelude::*;
 use http_types::headers::{CONNECTION, UPGRADE};
 use http_types::upgrade::Connection;
 use http_types::{Request, Response, StatusCode};
@@ -77,16 +77,10 @@ where
         let fut = decode(self.io.clone());
 
         let (req, mut body) = if let Some(timeout_duration) = self.opts.headers_timeout {
-            match fut
-                .or(async {
-                    Timer::after(timeout_duration).await;
-                    Ok(None)
-                })
-                .await
-            {
-                Ok(Some(r)) => r,
-                Ok(None) => return Ok(ConnectionStatus::Close), /* EOF or timeout */
-                Err(e) => return Err(e.into()),
+            match async_std::future::timeout(timeout_duration, fut).await {
+                Ok(Ok(Some(r))) => r,
+                Err(_) | Ok(Ok(None)) => return Ok(ConnectionStatus::Close), /* EOF or timeout */
+                Ok(Err(e)) => return Err(e.into()),
             }
         } else {
             match fut.await? {
