@@ -1,9 +1,9 @@
 use proc_macro::TokenStream as TS;
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Ident, Literal, Span, TokenStream};
 use quote::ToTokens;
 use syn::{
-    parenthesized, parse2, parse_quote, spanned::Spanned, token, Data, DeriveInput, Expr, Field,
-    Fields, Item, ItemStruct, Meta, MetaList, MetaNameValue, Result, Token, Type,
+    parenthesized, parse2, parse_quote, spanned::Spanned, token, Data, DeriveInput, Expr, ExprLit,
+    Field, Fields, Item, ItemStruct, Lit, Meta, MetaList, MetaNameValue, Result, Token, Type,
 };
 
 #[proc_macro]
@@ -287,8 +287,9 @@ pub fn with_builder(args: TS, item: TS) -> TS {
 fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
     let mut item = parse2::<Item>(item)?;
     let value = {
-        let (ident, struct_fields, meta) = match &item {
+        let (stru, ident, struct_fields, meta) = match &item {
             Item::Struct(s) => (
+                s,
                 s.ident.clone(),
                 &s.fields,
                 parse2::<EndpointMeta>(
@@ -401,9 +402,23 @@ fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
             None
         };
 
+        let doc = stru.attrs.iter().find_map(|x| {
+                    if x.path().is_ident("doc") {
+                        if let Meta::NameValue(MetaNameValue { value: Expr::Lit(ExprLit { lit: Lit::Str(st), .. }), .. }) = &x.meta {
+                            let value = Literal::string(&format!("{}\nThis function returns a builder, so you can configure the request and send it with [`{}::execute`].", st.value(), bld.to_string()));
+                            Some(quote::quote!(#[doc = #value]))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                });
+
         quote::quote! {
             #item
 
+            #doc
             pub struct #bld<'a>(&'a #client, #ident);
             impl<'a> #bld<'a> {
                 pub async fn execute(self) -> Result<#output, __Endpoint_Error> {
