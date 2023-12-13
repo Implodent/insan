@@ -310,8 +310,42 @@ fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
         let client = meta.client;
         let output = meta.output;
         let bld = Ident::new(&format!("{ident}Builder"), ident.span());
+        let doc = stru.attrs.iter().find_map(|x| {
+                    if x.path().is_ident("doc") {
+                        if let Meta::NameValue(MetaNameValue { value: Expr::Lit(ExprLit { lit: Lit::Str(st), .. }), .. }) = &x.meta {
+                            let value = Literal::string(&format!("{}\nThis function returns a builder, so you can configure the request and send it with [`{}::execute`].", st.value(), bld.to_string()));
+                            Some(quote::quote!(#[doc = #value]))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                });
+        let doc_unit = stru.attrs.iter().find_map(|x| {
+            if x.path().is_ident("doc") {
+                if let Meta::NameValue(MetaNameValue { value, .. }) = &x.meta {
+                    Some(quote::quote!(#[doc = #value]))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        });
         let fields = match struct_fields {
-            Fields::Unit => return Ok(TokenStream::new()),
+            Fields::Unit => {
+                return Ok(if let Ok(method) = parse2::<Ident>(args) {
+                    quote::quote! {
+                        impl #client {
+                            #doc_unit
+                            pub async fn #method()
+                        }
+                    }
+                } else {
+                    TokenStream::new()
+                })
+            }
             Fields::Named(named) => &named.named,
             Fields::Unnamed(unnamed) => {
                 return Err(syn::Error::new_spanned(
@@ -401,19 +435,6 @@ fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
         } else {
             None
         };
-
-        let doc = stru.attrs.iter().find_map(|x| {
-                    if x.path().is_ident("doc") {
-                        if let Meta::NameValue(MetaNameValue { value: Expr::Lit(ExprLit { lit: Lit::Str(st), .. }), .. }) = &x.meta {
-                            let value = Literal::string(&format!("{}\nThis function returns a builder, so you can configure the request and send it with [`{}::execute`].", st.value(), bld.to_string()));
-                            Some(quote::quote!(#[doc = #value]))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                });
 
         quote::quote! {
             #item
