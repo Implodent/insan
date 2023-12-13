@@ -337,6 +337,8 @@ fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
             Fields::Unit => {
                 return Ok(if let Ok(method) = parse2::<Ident>(args) {
                     quote::quote! {
+                        #item
+
                         impl #client {
                             #doc_unit
                             pub async fn #method(&self) -> Result<#output, __Endpoint_Error> {
