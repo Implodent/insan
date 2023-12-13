@@ -338,8 +338,8 @@ fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
 
                 quote::quote! {
                 #doc
-                                pub fn #ident(mut self, #ident: #ty) -> Self {
-                        self.1.#ident = #ident;
+                                pub fn #ident(mut self, #ident: impl Into<#ty>) -> Self {
+                        self.1.#ident = Into::<#ty>::into(#ident);
                         self
                                 }
                             }
