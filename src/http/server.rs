@@ -1,3 +1,5 @@
+use std::time::{Duration, SystemTime};
+
 use crate::Handler;
 
 use super::*;
@@ -59,5 +61,71 @@ where
         self.root.stopping(&mut cx).await?;
 
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RateLimit {
+    pub requests: usize,
+    pub per: Duration,
+}
+
+/// An adapter that adds a rate limit to `handler`.
+pub struct RateLimiter<H> {
+    handler: H,
+    pub limit: RateLimit,
+    remaining: usize,
+    until: Option<std::time::SystemTime>,
+}
+
+impl<H> RateLimiter<H> {
+    pub fn new(handler: H, limit: RateLimit) -> Self {
+        Self {
+            handler,
+            limit,
+            remaining: limit.requests,
+            until: None,
+        }
+    }
+}
+
+impl<H: Service> Service for RateLimiter<H> {
+    type Error = H::Error;
+    type Context = H::Context;
+}
+
+impl<H: Handler<Request, Response>> Handler<Request, Response> for RateLimiter<H> {
+    async fn call(
+        &mut self,
+        request: Request,
+        cx: &mut Self::Context,
+    ) -> Result<Response, Self::Error> {
+        let now = SystemTime::now();
+
+        if let Some(until) = self.until.filter(|until| now < *until) {
+            if self.remaining < 1 {
+                let mut response = Response::new(StatusCode::TooManyRequests);
+                response.append_header("x-ratelimit-limit", self.limit.requests.to_string());
+                response.append_header("x-ratelimit-remaining", 0.to_string());
+                response.append_header(
+                    "x-ratelimit-reset",
+                    until
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs()
+                        .to_string(),
+                );
+                Ok(response)
+            } else {
+                self.remaining -= 1;
+
+                self.handler.call(request, cx).await
+            }
+        } else {
+            self.remaining -= 1;
+            self.until = Some(now + self.limit.per);
+
+            self.handler.call(request, cx).await
+        }
     }
 }
