@@ -1,7 +1,7 @@
 //! Process HTTP connections on the client.
 
 use futures::io::{self, AsyncRead as Read, AsyncWrite as Write};
-use http_types::{Body, Headers, Request, Response, StatusCode};
+use http_types::{Request, Response, StatusCode};
 
 #[cfg(not(target_arch = "wasm32"))]
 mod decode;

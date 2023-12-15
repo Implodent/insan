@@ -1,16 +1,16 @@
-#![cfg_attr(
-    any(not(feature = "beta"), feature = "nightly"),
-    feature(async_fn_in_trait)
-)]
+#![feature(async_fn_in_trait)]
+
 pub use serde_urlencoded;
 pub use std::future::Future;
 
-pub trait Handler<Request, Response>: Service {
+pub trait Handler<Request>: Service {
+    type Response;
+
     async fn call(
         &mut self,
         request: Request,
         cx: &mut Self::Context,
-    ) -> Result<Response, Self::Error>;
+    ) -> Result<Self::Response, Self::Error>;
 }
 
 pub trait Service {
@@ -22,6 +22,56 @@ pub trait Service {
     }
     async fn stopping(&mut self, _cx: &Self::Context) -> Result<(), Self::Error> {
         Ok(())
+    }
+}
+
+pub trait Layer<S> {
+    type Service;
+
+    fn wrap(&self, inner: S) -> Self::Service;
+}
+
+pub struct Stack<A, B>(A, B);
+
+impl<S, A: Layer<S>, B: Layer<A::Service>> Layer<S> for Stack<A, B> {
+    type Service = B::Service;
+
+    fn wrap(&self, inner: S) -> Self::Service {
+        self.1.wrap(self.0.wrap(inner))
+    }
+}
+
+pub struct Identity;
+
+impl<S> Layer<S> for Identity {
+    type Service = S;
+    fn wrap(&self, inner: S) -> Self::Service {
+        inner
+    }
+}
+
+pub struct Builder<L>(L);
+
+impl Builder<Identity> {
+    pub fn new() -> Self {
+        Self(Identity)
+    }
+}
+
+impl<L> Builder<L> {
+    pub fn into_inner(self) -> L {
+        self.0
+    }
+
+    pub fn layer<T>(self, layer: T) -> Builder<Stack<T, L>> {
+        Builder(Stack(layer, self.0))
+    }
+
+    pub fn service<S>(&self, service: S) -> L::Service
+    where
+        L: Layer<S>,
+    {
+        self.0.wrap(service)
     }
 }
 

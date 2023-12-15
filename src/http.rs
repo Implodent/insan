@@ -1,6 +1,6 @@
 pub use http_types::{self, Method, Request, Response, StatusCode};
 
-use crate::Service;
+use crate::{Handler, Service, Layer};
 
 pub mod client;
 #[cfg(not(target_arch = "wasm32"))]

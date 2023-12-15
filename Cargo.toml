@@ -18,13 +18,13 @@ serde_urlencoded = "0.7.1"
 async-std.workspace = true
 acril-http = { optional = true, path = "http" }
 http-types.workspace = true
+async-io = "2.2"
+tracing = "0.1"
 
 [features]
-beta = []
 http = ["dep:acril-http"]
-nightly = []
 macros = ["dep:acril-macros"]
-default = ["macros", "nightly"]
+default = ["macros"]
 
 [[example]]
 name = "server"

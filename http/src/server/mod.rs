@@ -1,7 +1,5 @@
 //! Process HTTP connections on the server.
 
-use async_io::Timer;
-use futures::future::FutureExt;
 use futures::io::{self, AsyncRead as Read, AsyncWrite as Write};
 use http_types::headers::{CONNECTION, UPGRADE};
 use http_types::upgrade::Connection;

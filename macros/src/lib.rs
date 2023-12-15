@@ -266,7 +266,7 @@ fn _endpoint(item: TokenStream) -> Result<TokenStream> {
             type Output = #output;
 
             #[allow(unused)]
-            async fn run(&self, client: &Self::Context) -> Result<Self::Output, Self::Error> {
+            async fn run(&self, client: &mut Self::Context) -> Result<Self::Output, Self::Error> {
                 let mut request = client.new_request(Method::#method, &{#url});
                 #setup
 
@@ -430,7 +430,7 @@ fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
 
                 Some(quote::quote! {
                         impl #client {
-                pub fn #method(&self, #(#args,)*) -> #bld<'_> {
+                pub fn #method(&mut self, #(#args,)*) -> #bld<'_> {
                     #bld(self, #ident { #(#self_init_fields,)* })
                 }
                         }
@@ -444,7 +444,7 @@ fn _with_builder(args: TokenStream, item: TokenStream) -> Result<TokenStream> {
             #item
 
             #doc
-            pub struct #bld<'a>(&'a #client, #ident);
+            pub struct #bld<'a>(&'a mut #client, #ident);
             impl<'a> #bld<'a> {
                 pub async fn execute(self) -> Result<#output, __Endpoint_Error> {
                     self.1.run(self.0).await

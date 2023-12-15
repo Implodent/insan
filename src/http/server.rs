@@ -1,7 +1,5 @@
 use std::time::{Duration, SystemTime};
 
-use crate::Handler;
-
 use super::*;
 use acril_http::{
     server::{ConnectionStatus, Server as HttpServer},
@@ -26,7 +24,7 @@ impl<S: Service<Context = Self>> HttpContext<S> {
     }
 }
 
-impl<H: Service<Context = HttpContext<H>> + Handler<Request, Response>, RW> Server<H, RW>
+impl<H: Service<Context = HttpContext<H>> + Handler<Request, Response = Response>, RW> Server<H, RW>
 where
     RW: Read + Write + Clone + Send + Sync + Unpin + 'static,
     H::Error: From<std::io::Error> + From<http_types::Error> + ResponseError,
@@ -65,36 +63,44 @@ where
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct RateLimit {
+pub struct Rate {
     pub requests: usize,
     pub per: Duration,
 }
 
-/// An adapter that adds a rate limit to `handler`.
-pub struct RateLimiter<H> {
-    handler: H,
-    pub limit: RateLimit,
-    remaining: usize,
-    until: Option<std::time::SystemTime>,
+pub struct RateLimitLayer {
+    pub rate: Rate,
 }
 
-impl<H> RateLimiter<H> {
-    pub fn new(handler: H, limit: RateLimit) -> Self {
-        Self {
-            handler,
-            limit,
-            remaining: limit.requests,
+impl<S> Layer<S> for RateLimitLayer {
+    type Service = RateLimitService<S>;
+
+    fn wrap(&self, inner: S) -> Self::Service {
+        RateLimitService {
+            rate: self.rate,
+            inner,
+            remaining: self.rate.requests,
             until: None,
         }
     }
 }
 
-impl<H: Service> Service for RateLimiter<H> {
+#[doc(hidden)]
+pub struct RateLimitService<S> {
+    inner: S,
+    rate: Rate,
+    remaining: usize,
+    until: Option<std::time::SystemTime>,
+}
+
+impl<H: Service> Service for RateLimitService<H> {
     type Error = H::Error;
     type Context = H::Context;
 }
 
-impl<H: Handler<Request, Response>> Handler<Request, Response> for RateLimiter<H> {
+impl<H: Handler<Request, Response = Response>> Handler<Request> for RateLimitService<H> {
+    type Response = Response;
+
     async fn call(
         &mut self,
         request: Request,
@@ -105,7 +111,7 @@ impl<H: Handler<Request, Response>> Handler<Request, Response> for RateLimiter<H
         if let Some(until) = self.until.filter(|until| now < *until) {
             if self.remaining < 1 {
                 let mut response = Response::new(StatusCode::TooManyRequests);
-                response.append_header("x-ratelimit-limit", self.limit.requests.to_string());
+                response.append_header("x-ratelimit-limit", self.rate.requests.to_string());
                 response.append_header("x-ratelimit-remaining", 0.to_string());
                 response.append_header(
                     "x-ratelimit-reset",
@@ -119,13 +125,13 @@ impl<H: Handler<Request, Response>> Handler<Request, Response> for RateLimiter<H
             } else {
                 self.remaining -= 1;
 
-                self.handler.call(request, cx).await
+                self.inner.call(request, cx).await
             }
         } else {
             self.remaining -= 1;
-            self.until = Some(now + self.limit.per);
+            self.until = Some(now + self.rate.per);
 
-            self.handler.call(request, cx).await
+            self.inner.call(request, cx).await
         }
     }
 }

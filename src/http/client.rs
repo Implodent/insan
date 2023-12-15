@@ -1,26 +1,34 @@
+use crate::Handler;
+
 use super::*;
 pub use acril_macros::{with_builder, ClientEndpoint};
 use http_types::Url;
 
-pub struct NoMiddleware;
+mod rate_limit;
 
-impl Service for NoMiddleware {
+pub struct DefaultMiddleware;
+
+impl Service for DefaultMiddleware {
     type Context = ();
     type Error = http_types::Error;
 }
 
-pub trait Middleware: Service<Context = ()> {
-    async fn call(&self, request: Request) -> Result<Response, <Self as Service>::Error>;
-}
+impl Handler<Request> for DefaultMiddleware {
+    type Response = Response;
 
-impl Middleware for NoMiddleware {
-    async fn call(&self, request: Request) -> Result<Response, Self::Error> {
+    async fn call(
+        &mut self,
+        request: Request,
+        _cx: &mut Self::Context,
+    ) -> Result<Self::Response, Self::Error> {
         acril_http::client::connect(request).await
     }
 }
 
+pub trait Middleware: Handler<Request, Response = Response, Context = ()> {}
+
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct HttpClient<M = NoMiddleware> {
+pub struct HttpClient<M = DefaultMiddleware> {
     middleware: M,
     base_url: Option<Url>,
 }
@@ -46,21 +54,21 @@ impl<M: Middleware> HttpClient<M> {
     }
 
     pub async fn call<E: Service<Context = Self> + ClientEndpoint>(
-        &self,
+        &mut self,
         endpoint: E,
     ) -> Result<E::Output, E::Error> {
         endpoint.run(self).await
     }
 
-    pub async fn execute(&self, request: Request) -> Result<Response, M::Error> {
-        self.middleware.call(request).await
+    pub async fn execute(&mut self, request: Request) -> Result<Response, M::Error> {
+        self.middleware.call(request, &mut ()).await
     }
 }
 
-impl HttpClient<NoMiddleware> {
+impl HttpClient<DefaultMiddleware> {
     pub fn new() -> Self {
         Self {
-            middleware: NoMiddleware,
+            middleware: DefaultMiddleware,
             base_url: None,
         }
     }
@@ -70,7 +78,7 @@ pub trait HttpClientContext {
     type Error;
 
     fn new_request(&self, method: Method, url: &str) -> Request;
-    async fn run_request(&self, request: Request) -> Result<Response, Self::Error>;
+    async fn run_request(&mut self, request: Request) -> Result<Response, Self::Error>;
 }
 
 impl<M: Middleware> HttpClientContext for HttpClient<M> {
@@ -90,7 +98,7 @@ impl<M: Middleware> HttpClientContext for HttpClient<M> {
         )
     }
 
-    async fn run_request(&self, request: Request) -> Result<Response, M::Error> {
+    async fn run_request(&mut self, request: Request) -> Result<Response, M::Error> {
         self.execute(request).await
     }
 }
@@ -101,5 +109,5 @@ where
 {
     type Output;
 
-    async fn run(&self, context: &Self::Context) -> Result<Self::Output, Self::Error>;
+    async fn run(&self, context: &mut Self::Context) -> Result<Self::Output, Self::Error>;
 }
