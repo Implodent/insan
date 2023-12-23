@@ -2,9 +2,10 @@ use std::io;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use futures::io::AsyncRead as Read;
+use tokio::io::AsyncRead as Read;
 use http_types::Body;
 use pin_project::pin_project;
+use tokio::io::ReadBuf;
 
 use crate::chunked::ChunkedEncoder;
 
@@ -28,8 +29,8 @@ impl Read for BodyEncoder {
     fn poll_read(
         self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
+        buf: &mut ReadBuf<'_>,
+    ) -> Poll<io::Result<()>> {
         match self.project() {
             BodyEncoderProjection::Chunked(encoder) => encoder.poll_read(cx, buf),
             BodyEncoderProjection::Fixed(body) => body.poll_read(cx, buf),
