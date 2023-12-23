@@ -1,6 +1,8 @@
 //! Process HTTP connections on the client.
 
-use futures::io::{self, AsyncRead as Read, AsyncWrite as Write};
+use tokio::net::TcpStream;
+
+use tokio::io::{self, AsyncRead as Read, AsyncWrite as Write};
 use http_types::{Request, Response, StatusCode};
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -55,7 +57,7 @@ pub async fn connect(req: Request) -> http_types::Result<Response> {
 
     #[cfg(not(target_arch = "wasm32"))]
     if req.url().scheme() == "https" {
-        let stream = async_std::net::TcpStream::connect(format!(
+        let stream = TcpStream::connect(format!(
             "{}:{}",
             req.url().host_str().ok_or_else(|| {
                 http_types::Error::from_str(
@@ -90,7 +92,7 @@ pub async fn connect(req: Request) -> http_types::Result<Response> {
         .await
     } else {
         native_connect(
-            async_std::net::TcpStream::connect(format!(
+            TcpStream::connect(format!(
                 "{}:{}",
                 req.url().host_str().ok_or_else(|| {
                     http_types::Error::from_str(

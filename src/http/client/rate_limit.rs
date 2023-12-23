@@ -1,10 +1,11 @@
-use std::time::Duration;
+use std::{time::Duration, pin::Pin};
 
 use super::*;
+use tokio::time::{Sleep, Instant};
 
 struct RateLimit<S> {
     inner: S,
-    sleep: async_io::Timer,
+    sleep: Sleep,
 }
 
 impl<S: Service> Service for RateLimit<S> {
@@ -46,7 +47,7 @@ where
                 let sec = when.as_secs() - min * 60;
                 tracing::debug!("got rate limited, waiting for {hrs}h {min}m {sec}s");
 
-                self.sleep.set_after(when);
+                Pin::new(&mut self.sleep).reset(Instant::now() + when);
             }
         }
 

@@ -118,8 +118,8 @@ pub mod server;
 #[cfg(not(target_arch = "wasm32"))]
 use body_encoder::BodyEncoder;
 pub use client::connect;
-use futures::io::Cursor;
-pub use futures::io::{AsyncRead as Read, AsyncWrite as Write};
+use tokio::io::BufReader;
+pub use tokio::io::{AsyncRead as Read, AsyncWrite as Write};
 #[cfg(not(target_arch = "wasm32"))]
 pub use server::ServerOptions;
 
@@ -127,7 +127,7 @@ pub use server::ServerOptions;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) enum EncoderState {
     Start,
-    Head(Cursor<Vec<u8>>),
+    Head(BufReader<Vec<u8>>),
     Body(BodyEncoder),
     End,
 }

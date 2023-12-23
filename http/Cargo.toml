@@ -4,12 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-async-std.workspace = true
-http-types.workspace = true
 log = "0.4.11"
 pin-project = "1.0.2"
 futures = { version = "0.3.1" }
-async-tls = "0.12"
+tokio-rustls = "0.25"
+
+[dependencies.tokio]
+workspace = true
+
+[dependencies.http-types]
+workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = { version = "0.3.25" }

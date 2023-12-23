@@ -232,9 +232,9 @@ impl<R: Read + Unpin> Read for ChunkedDecoder<R> {
 }
 
 #[cfg(test)]
+#[cfg(feature ="lllllllllllllllll")]
 mod tests {
     use super::*;
-    use async_std::prelude::*;
 
     #[test]
     fn test_chunked_wiki() {

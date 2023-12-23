@@ -1,4 +1,4 @@
-#![feature(async_fn_in_trait)]
+#![allow(async_fn_in_trait)]
 
 pub use serde_urlencoded;
 pub use std::future::Future;

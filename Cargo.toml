@@ -9,17 +9,21 @@ members = [".", "http", "macros"]
 resolver = "2"
 
 [workspace.dependencies]
-http-types = { version = "2.12.0", default-features = false }
-async-std = "1.12"
+http-types = { version = "2", default-features = false }
+tokio = { version = "1", features = ["time", "net", "io-util"] }
 
 [dependencies]
 acril-macros = { path = "./macros", optional = true }
 serde_urlencoded = "0.7.1"
-async-std.workspace = true
 acril-http = { optional = true, path = "http" }
-http-types.workspace = true
 tracing = "0.1"
-async-tungstenite = "0.24"
+async-tungstenite = { version = "0.24", optional = true }
+
+[dependencies.http-types]
+workspace = true
+
+[dependencies.tokio]
+workspace = true
 
 [features]
 http = ["dep:acril-http"]
@@ -40,6 +44,5 @@ name = "builder"
 required-features = ["macros"]
 
 [dev-dependencies]
-async-std = { version = "1.12", features = [ "attributes" ] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
