@@ -5,7 +5,7 @@ use tokio::time::{Sleep, Instant};
 
 struct RateLimit<S> {
     inner: S,
-    sleep: Sleep,
+    sleep: Pin<Box<Sleep>>,
 }
 
 impl<S: Service> Service for RateLimit<S> {
@@ -47,7 +47,7 @@ where
                 let sec = when.as_secs() - min * 60;
                 tracing::debug!("got rate limited, waiting for {hrs}h {min}m {sec}s");
 
-                Pin::new(&mut self.sleep).reset(Instant::now() + when);
+                self.sleep.as_mut().reset(Instant::now() + when);
             }
         }
 

@@ -75,7 +75,7 @@ where
         let fut = decode(self.io.clone());
 
         let (req, mut body) = if let Some(timeout_duration) = self.opts.headers_timeout {
-            match async_std::future::timeout(timeout_duration, fut).await {
+            match tokio::time::timeout(timeout_duration, fut).await {
                 Ok(Ok(Some(r))) => r,
                 Err(_) | Ok(Ok(None)) => return Ok(ConnectionStatus::Close), /* EOF or timeout */
                 Ok(Err(e)) => return Err(e.into()),

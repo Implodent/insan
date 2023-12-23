@@ -1,8 +1,8 @@
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use tokio::io::{self, AsyncRead as Read, ReadBuf};
-use futures::ready;
+use futures::io::AsyncRead as Read;
+use futures::{io, ready};
 
 /// An encoder for chunked encoding.
 #[derive(Debug)]
@@ -25,17 +25,16 @@ impl<R: Read + Unpin> Read for ChunkedEncoder<R> {
     fn poll_read(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
-        buf: &mut ReadBuf<'_>,
-    ) -> Poll<io::Result<()>> {
+        buf: &mut [u8],
+    ) -> Poll<io::Result<usize>> {
         if self.done {
-            return Poll::Ready(Ok(()));
+            return Poll::Ready(Ok(0));
         }
         let reader = &mut self.reader;
 
-        let filled = buf.filled().len();
+        let max_bytes_to_read = max_bytes_to_read(buf.len());
 
-        ready!(Pin::new(reader).poll_read(cx, buf))?;
-        let bytes = buf.filled().len() - filled;
+        let bytes = ready!(Pin::new(reader).poll_read(cx, &mut buf[..max_bytes_to_read]))?;
         if bytes == 0 {
             self.done = true;
         }

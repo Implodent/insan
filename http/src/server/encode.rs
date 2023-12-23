@@ -1,11 +1,11 @@
 //! Process HTTP connections on the server.
 
-use std::io::{Write, Cursor};
+use std::io::Write;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::SystemTime;
 
-use tokio::io::{self, AsyncRead as Read};
+use futures::io::{self, AsyncRead as Read, Cursor};
 use http_types::headers::{CONTENT_LENGTH, DATE, TRANSFER_ENCODING};
 use http_types::{Method, Response};
 
