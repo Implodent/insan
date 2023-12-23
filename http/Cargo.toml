@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 log = "0.4.11"
 pin-project = "1.0.2"
-futures = { version = "0.3.1" }
+futures = {workspace=true}
 tokio-rustls = "0.25"
 tokio = {workspace=true}
 http-types = {workspace=true}

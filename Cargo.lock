@@ -8,7 +8,9 @@ version = "0.1.0"
 dependencies = [
  "acril-http",
  "acril-macros",
+ "async-compat",
  "async-tungstenite",
+ "futures",
  "http-types",
  "pin-project",
  "serde_urlencoded",
@@ -202,6 +204,7 @@ dependencies = [
  "futures-util",
  "log",
  "pin-project-lite",
+ "tokio",
  "tungstenite",
 ]
 

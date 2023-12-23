@@ -1,4 +1,5 @@
-#![allow(async_fn_in_trait)]
+#![allow(async_fn_in_trait, incomplete_features)]
+#![feature(associated_type_bounds, return_type_notation)]
 
 pub use serde_urlencoded;
 pub use std::future::Future;
@@ -77,6 +78,9 @@ impl<L> Builder<L> {
 
 #[cfg(feature = "http")]
 pub mod http;
+
+#[cfg(feature = "websocket")]
+pub mod websocket;
 
 pub mod prelude {
     pub use crate::{serde_urlencoded, Handler, Service};
