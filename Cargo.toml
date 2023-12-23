@@ -18,11 +18,12 @@ serde_urlencoded = "0.7.1"
 async-std.workspace = true
 acril-http = { optional = true, path = "http" }
 http-types.workspace = true
-async-io = "2.2"
 tracing = "0.1"
+async-tungstenite = "0.24"
 
 [features]
 http = ["dep:acril-http"]
+websocket = ["dep:async-tungstenite", "http"]
 macros = ["dep:acril-macros"]
 default = ["macros"]
 
