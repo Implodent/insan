@@ -7,11 +7,9 @@ edition = "2021"
 log = "0.4.11"
 pin-project = "1.0.2"
 futures = {workspace=true}
-tokio-rustls = "0.25"
-tokio = {workspace=true}
+async-tls = "0.12"
 http-types = {workspace=true}
-async-compat = {workspace=true}
-webpki-roots = "0.26.0"
+async-std = "1.12"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = { version = "0.3.25" }

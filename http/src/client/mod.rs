@@ -2,11 +2,7 @@
 
 use std::sync::Arc;
 
-use tokio::net::TcpStream;
-
-use async_compat::CompatExt;
 use http_types::{Request, Response, StatusCode};
-use tokio::io::{self, AsyncRead as Read, AsyncWrite as Write};
 
 #[cfg(not(target_arch = "wasm32"))]
 mod decode;
@@ -17,13 +13,10 @@ mod encode;
 pub use decode::decode;
 #[cfg(not(target_arch = "wasm32"))]
 pub use encode::Encoder;
-use tokio_rustls::{
-    rustls::{
-        pki_types::DnsName,
-        ClientConfig, RootCertStore,
-    },
-    TlsConnector,
-};
+use async_tls::TlsConnector;
+use async_std::net::TcpStream;
+
+use futures::io::{AsyncRead as Read, AsyncWrite as Write, self};
 
 #[cfg(not(target_arch = "wasm32"))]
 async fn native_connect<RW>(mut stream: RW, req: Request) -> http_types::Result<Response>
@@ -33,21 +26,12 @@ where
     let mut req = Encoder::new(req);
     log::trace!("> {:?}", &req);
 
-    io::copy(&mut req.compat_mut(), &mut stream).await?;
+    io::copy(&mut req, &mut stream).await?;
 
-    let res = decode(stream.compat()).await?;
+    let res = decode(stream).await?;
     log::trace!("< {:?}", &res);
 
     Ok(res)
-}
-
-fn make_connector() -> TlsConnector {
-    let mut root_cert_store = RootCertStore::empty();
-    root_cert_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
-    let config = ClientConfig::builder()
-        .with_root_certificates(root_cert_store)
-        .with_no_client_auth();
-    TlsConnector::from(Arc::new(config))
 }
 
 /// Opens an HTTP/1.1 connection to a remote host.
@@ -92,20 +76,15 @@ pub async fn connect(req: Request) -> http_types::Result<Response> {
             })?
         ))
         .await?;
-        let connector = make_connector();
-
         native_connect(
-            connector
+            TlsConnector::default()
                 .connect(
-                    tokio_rustls::rustls::pki_types::ServerName::DnsName(
-                        DnsName::try_from(req.host().ok_or_else(|| {
-                            http_types::Error::from_str(
-                                StatusCode::UnprocessableEntity,
-                                "No host in request URL",
+                    req.host().ok_or_else(|| {
+                        http_types::Error::from_str(
+                            StatusCode::UnprocessableEntity,
+                            "No host in request URL",
                             )
-                        })?)
-                        .unwrap().to_owned(),
-                    ),
+                    })?,
                     stream,
                 )
                 .await?,
