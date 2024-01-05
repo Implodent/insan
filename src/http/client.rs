@@ -2,7 +2,7 @@ use crate::Handler;
 
 use super::*;
 pub use acril_macros::{with_builder, ClientEndpoint};
-use http::Uri;
+use http_types::Url;
 
 mod rate_limit;
 
@@ -77,16 +77,24 @@ impl HttpClient<DefaultMiddleware> {
 pub trait HttpClientContext {
     type Error;
 
-    fn new_request(&self, method: Method, url: Uri) -> http::request::Builder;
+    fn new_request(&self, method: Method, url: &str) -> Request;
     async fn run_request(&mut self, request: Request) -> Result<Response, Self::Error>;
 }
 
 impl<M: Middleware> HttpClientContext for HttpClient<M> {
     type Error = <M as Service>::Error;
 
-    fn new_request(&self, method: Method, url: Uri) -> http::request::Builder {
+    fn new_request(&self, method: Method, url: &str) -> Request {
         Request::new(
             method,
+            if let Some(base) = self.base_url.as_ref() {
+                Url::options()
+                    .base_url(Some(base))
+                    .parse(url)
+                    .expect("errors reparsing a perfectly good url")
+            } else {
+                Url::parse(url).unwrap()
+            },
         )
     }
 

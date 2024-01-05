@@ -9,7 +9,7 @@ members = [".", "http", "macros"]
 resolver = "2"
 
 [workspace.dependencies]
-http = { version = "1" }
+http-types = { version = "2", default-features = false }
 tokio = { version = "1", features = ["time", "net", "io-util"] }
 futures = "0.3"
 async-compat = "0.2"
@@ -21,7 +21,7 @@ acril-http = { optional = true, path = "http" }
 tracing = "0.1"
 async-tungstenite = { version = "0.24", features = [ "tokio-runtime" ], optional = true }
 tokio = {workspace=true}
-http = {workspace=true}
+http-types = {workspace=true}
 async-compat = {workspace=true}
 futures = {workspace=true}
 pin-project = "1.1.3"

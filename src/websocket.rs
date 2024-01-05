@@ -1,13 +1,9 @@
 use std::{future::IntoFuture, marker::PhantomData};
 
-use async_tungstenite::{
-    tungstenite::handshake::client::{Request, Response},
-    WebSocketStream,
-};
+use async_tungstenite::{tokio::TokioAdapter, tungstenite::Message, WebSocketStream};
 use futures::{Sink, SinkExt, StreamExt};
 use tokio::{
     io::{AsyncRead, AsyncWrite},
-    net::TcpStream,
     task::JoinHandle,
 };
 
@@ -17,11 +13,6 @@ pub struct WebSocket<S, H: Service> {
     handle: JoinHandle<Result<(), H::Error>>,
     phantom: PhantomData<S>,
 }
-
-pub use async_tungstenite::{
-    tokio::TokioAdapter,
-    tungstenite::{self, Message},
-};
 
 impl<
         S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
@@ -66,19 +57,4 @@ impl<S, H: Service> IntoFuture for WebSocket<S, H> {
     fn into_future(self) -> Self::IntoFuture {
         self.handle
     }
-}
-
-pub async fn initialize<S: AsyncRead + AsyncWrite + Unpin>(
-    stream: S,
-    request: Request,
-) -> Result<WebSocketStream<TokioAdapter<S>>, tungstenite::Error> {
-    Ok(
-        async_tungstenite::client_async(request, TokioAdapter::new(stream))
-            .await?
-            .0,
-    )
-}
-
-pub async fn connect(request: Request) -> Result<WebSocketStream<TokioAdapter<TcpStream>>, tungstenite::Error> {
-    
 }

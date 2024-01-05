@@ -9,7 +9,7 @@ pin-project = "1.0.2"
 futures = {workspace=true}
 tokio-rustls = "0.25"
 tokio = {workspace=true}
-http = {workspace=true}
+http-types = {workspace=true}
 async-compat = {workspace=true}
 webpki-roots = "0.26.0"
 
