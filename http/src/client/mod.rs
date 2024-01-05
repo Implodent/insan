@@ -1,7 +1,5 @@
 //! Process HTTP connections on the client.
 
-use std::sync::Arc;
-
 use http_types::{Request, Response, StatusCode};
 
 #[cfg(not(target_arch = "wasm32"))]

@@ -1,6 +1,4 @@
-use std::{future::IntoFuture, marker::PhantomData};
-
-use async_tungstenite::{tokio::TokioAdapter, tungstenite::Message, WebSocketStream};
+use async_tungstenite::{tungstenite::Message, WebSocketStream};
 use futures::{Sink, SinkExt, StreamExt, io::{AsyncRead, AsyncWrite}};
 
 use crate::{Handler, Service};
@@ -9,7 +7,7 @@ pub async fn lifecycle<
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
     H: Service<Context = WebSocketStream<S>>,
 >(
-    mut stream: WebSocketStream<TokioAdapter<S>>,
+    mut stream: WebSocketStream<S>,
     mut handler: H,
 ) -> Result<(), H::Error>
 where
