@@ -15,9 +15,9 @@ http-types = { version = "2", default-features = false }
 futures = "0.3"
 
 [dependencies]
-acril-macros = { path = "./macros", optional = true }
+acril-macros = { path = "./macros", optional = true, version = "0.1.0" }
 serde_urlencoded = { version = "0.7.1", optional = true }
-acril-http = { optional = true, path = "http" }
+acril-http = { optional = true, path = "http", version = "0.1.0" }
 tracing = "0.1"
 async-tungstenite = { version = "0.24", optional = true }
 http-types = { workspace = true, optional = true }
