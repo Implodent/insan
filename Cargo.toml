@@ -3,6 +3,8 @@ name = "acril"
 version = "0.1.0"
 edition = "2021"
 description = "A microservice/actor/whatever framework."
+repository = "https://github.com/PassivityTrading/acril"
+license = "MIT"
 
 [workspace]
 members = [".", "http", "macros"]
@@ -29,10 +31,6 @@ macros = ["dep:acril-macros", "dep:serde_urlencoded"]
 default = []
 
 [[example]]
-name = "server"
-required-features = ["http"]
-
-[[example]]
 name = "client"
 required-features = ["http"]
 
@@ -41,5 +39,4 @@ name = "builder"
 required-features = ["macros"]
 
 [dev-dependencies]
-tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
