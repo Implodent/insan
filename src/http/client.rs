@@ -4,8 +4,6 @@ use super::*;
 pub use acril_macros::{with_builder, ClientEndpoint};
 use http_types::Url;
 
-mod rate_limit;
-
 pub struct DefaultMiddleware;
 
 impl Service for DefaultMiddleware {
@@ -103,10 +101,7 @@ impl<M: Middleware> HttpClientContext for HttpClient<M> {
     }
 }
 
-pub trait ClientEndpoint: Service
-where
-    Self::Context: HttpClientContext,
-{
+pub trait ClientEndpoint: Service {
     type Output;
 
     async fn run(&self, context: &mut Self::Context) -> Result<Self::Output, Self::Error>;

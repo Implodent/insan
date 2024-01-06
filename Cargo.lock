@@ -8,7 +8,6 @@ version = "0.1.0"
 dependencies = [
  "acril-http",
  "acril-macros",
- "async-io 2.2.2",
  "async-tungstenite",
  "futures",
  "http-types",
