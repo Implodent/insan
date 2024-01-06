@@ -14,18 +14,18 @@ futures = "0.3"
 
 [dependencies]
 acril-macros = { path = "./macros", optional = true }
-serde_urlencoded = "0.7.1"
+serde_urlencoded = { version = "0.7.1", optional = true }
 acril-http = { optional = true, path = "http" }
 tracing = "0.1"
 async-tungstenite = { version = "0.24", optional = true }
-http-types = {workspace=true}
-futures = {workspace=true}
+http-types = { workspace = true, optional = true }
+futures = { workspace = true }
 pin-project = "1.1.3"
 
 [features]
-http = ["dep:acril-http"]
+http = ["dep:acril-http", "dep:http-types"]
 websocket = ["dep:async-tungstenite", "http"]
-macros = ["dep:acril-macros"]
+macros = ["dep:acril-macros", "dep:serde_urlencoded"]
 default = []
 
 [[example]]
