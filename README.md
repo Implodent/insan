@@ -14,6 +14,4 @@ You have full control over how your actor runs, how it runs, and when it ends.
 
 This library includes:
 - A HTTP client, with traits (and proc-macros to implement those traits) accompanying it, for easy development of SDKs for REST APIs; we use it in our [Alpaca Rust SDK](https://github.com/PassivityTrading/alpaca-rs).
-- A HTTP server, (TODO) with a built-in router and optional generation of client endpoints for those routes.
-- (soon) A Server-sent Events & WebSockets layers to allow actors to handle events/messages.
-- (very soon) A default runtime for actors, accomodating their lifecycle and allowing spawning child tasks and/or actors.
+- A WebSockets layer to allow actors to handle messages.
