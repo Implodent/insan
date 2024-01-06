@@ -1,14 +1,21 @@
 [package]
 name = "acril"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+repository.workspace = true
+license.workspace = true
+
+[workspace]
+members = [".", "http", "macros"]
+resolver = "2"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
 description = "A microservice/actor/whatever framework."
 repository = "https://github.com/PassivityTrading/acril"
 license = "MIT"
-
-[workspace]
-members = [".", "http", "macros"]
-resolver = "2"
 
 [workspace.dependencies]
 http-types = { version = "2", default-features = false }
