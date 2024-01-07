@@ -28,10 +28,10 @@ pub trait Service {
     type Context;
     type Error;
 
-    async fn started(&mut self, _cx: &Self::Context) -> Result<(), Self::Error> {
+    async fn started(&mut self, _cx: &mut Self::Context) -> Result<(), Self::Error> {
         Ok(())
     }
-    async fn stopping(&mut self, _cx: &Self::Context) -> Result<(), Self::Error> {
+    async fn stopping(&mut self, _cx: &mut Self::Context) -> Result<(), Self::Error> {
         Ok(())
     }
 }
