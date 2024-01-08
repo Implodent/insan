@@ -1,5 +1,6 @@
 use async_tungstenite::{tungstenite::Message, WebSocketStream};
 use futures::{Sink, SinkExt, StreamExt, io::{AsyncRead, AsyncWrite}};
+pub use async_tungstenite;
 
 use crate::{Handler, Service};
 
